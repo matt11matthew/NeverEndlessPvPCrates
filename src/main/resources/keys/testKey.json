@@ -1,0 +1,35 @@
+{
+  "name": "TestKey",
+  "item": {
+    "type": "STONE",
+    "data": 0,
+    "displayName": "&aTest Key",
+    "lore": [
+      "&7Test Key"
+    ]
+  },
+  "rewards": {
+    "stoneReward": {
+      "chance": 10.0,
+      "commands": [
+        {
+          "chance": 5.0,
+          "command": "give %player% stone 1"
+        }
+      ],
+      "messages": {
+        "broadcast": false,
+        "winMessage": "You have won the stone reward from a test key",
+        "broadcastMessage": "%player% has won the stone reward from a test key"
+      },
+      "item": {
+        "type": "STONE",
+        "data": 0,
+        "displayName": "&aStone",
+        "lore": [
+          "&7Stone reward"
+        ]
+      }
+    }
+  }
+}
