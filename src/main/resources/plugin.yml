@@ -1,0 +1,5 @@
+name: NeverEndlessPvP
+version: ${project.version}
+main: net.neverendlesspvp.cratekeys.NeverEndlessPvPCrates
+authors: [MatthewE]
+description: NeverEndlessPvP
