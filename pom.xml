@@ -39,6 +39,7 @@
             </goals>
             <configuration>
               <minimizeJar>true</minimizeJar>
+              <outputFile>C:\Users\matt1\Desktop\WatchDogTest\plugins\NeverEndlessPvPCrates.jar</outputFile>
               <finalName>NeverEndlessPvPCrates</finalName>
             </configuration>
           </execution>

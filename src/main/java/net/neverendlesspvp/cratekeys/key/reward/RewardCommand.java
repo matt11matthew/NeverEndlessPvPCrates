@@ -1,4 +1,4 @@
-package net.neverendlesspvp.cratekeys.key;
+package net.neverendlesspvp.cratekeys.key.reward;
 
 /**
  * Created by Matthew E on 1/3/2018.
