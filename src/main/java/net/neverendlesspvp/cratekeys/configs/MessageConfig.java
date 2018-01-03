@@ -7,6 +7,8 @@ import net.neverendlesspvp.cratekeys.config.MeConfig;
  */
 public class MessageConfig extends MeConfig {
 
+    public static String jsonBuilder_jsonDateFormat="YYYY HH:MM";
+
     public MessageConfig() {
         super("messages");
     }

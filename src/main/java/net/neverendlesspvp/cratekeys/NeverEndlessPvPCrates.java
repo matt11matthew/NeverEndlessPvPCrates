@@ -1,6 +1,6 @@
 package net.neverendlesspvp.cratekeys;
 
-import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.neverendlesspvp.cratekeys.config.MeConfigManager;
 import net.neverendlesspvp.cratekeys.configs.MessageConfig;
 import net.neverendlesspvp.cratekeys.key.CrateKey;
@@ -20,6 +20,7 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
     private static NeverEndlessPvPCrates instance;
     private static MeConfigManager configManager;
     private Map<String, CrateKey> crateKeyMap;
+    private GsonBuilder gsonBuilder;
 
     public static NeverEndlessPvPCrates getInstance() {
         return instance;
@@ -30,6 +31,16 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
         instance = this;
         configManager = new MeConfigManager(this);
         configManager.load(new MessageConfig());
+        this.gsonBuilder = new GsonBuilder();
+        this.gsonBuilder.setDateFormat(MessageConfig.jsonBuilder_jsonDateFormat);
+        this.gsonBuilder.setFieldNamingStrategy(f -> {
+            switch (f.getName()) {
+                case "rewardMap":
+                    return "rewards";
+                default:
+                    return f.getName();
+            }
+        });
         this.loadCrateKeys();
     }
 
@@ -42,7 +53,7 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
         for (File file : Objects.requireNonNull(keyDirectory.listFiles())) {
             if (file.getName().endsWith(".json")) {
                 try {
-                    CrateKey crateKey = new Gson().fromJson(FileUtils.readFileToString(file, Charset.defaultCharset()), CrateKey.class);
+                    CrateKey crateKey = gsonBuilder.create().fromJson(FileUtils.readFileToString(file, Charset.defaultCharset()), CrateKey.class);
                     this.crateKeyMap.put(crateKey.getName(), crateKey);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -57,5 +68,9 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
     @Override
     public void onDisable() {
         configManager.unload();
+    }
+
+    public GsonBuilder getGsonBuilder() {
+        return gsonBuilder;
     }
 }
