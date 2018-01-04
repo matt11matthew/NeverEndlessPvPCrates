@@ -1,28 +1,36 @@
 package net.neverendlesspvp.cratekeys;
 
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import net.neverendlesspvp.cratekeys.command.SpigotCommandHandler;
+import net.neverendlesspvp.cratekeys.commands.CrateCommand;
 import net.neverendlesspvp.cratekeys.commands.CrateKeyCommand;
 import net.neverendlesspvp.cratekeys.config.MeConfigManager;
 import net.neverendlesspvp.cratekeys.configs.MessageConfig;
+import net.neverendlesspvp.cratekeys.crate.Crate;
+import net.neverendlesspvp.cratekeys.crate.CrateLocation;
+import net.neverendlesspvp.cratekeys.inventory.MeInventoryClickListener;
+import net.neverendlesspvp.cratekeys.inventory.MeInventoryCloseListener;
 import net.neverendlesspvp.cratekeys.key.CrateKey;
+import net.neverendlesspvp.cratekeys.key.reward.Rarity;
 import net.neverendlesspvp.cratekeys.key.reward.Reward;
 import net.neverendlesspvp.cratekeys.key.reward.RewardCommand;
-import net.neverendlesspvp.cratekeys.key.reward.Rarity;
+import net.neverendlesspvp.cratekeys.listeners.ClickListener;
+import net.neverendlesspvp.cratekeys.listeners.PlayerInteractListener;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public final class NeverEndlessPvPCrates extends JavaPlugin {
     private static NeverEndlessPvPCrates instance;
@@ -30,10 +38,28 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
     private SpigotCommandHandler commandHandler;
     private Map<String, CrateKey> crateKeyMap;
     private Map<String, Rarity> rarityMap;
+    private List<Integer> toCancelTaskIdList  =new ArrayList<>();
+    private Map<UUID, ArmorStand> hologramMap;
+    private Map<UUID, Crate> crateMap;
+    private Map<UUID, Integer> taskIdPlayerMap;
+    private Map<Location, UUID> crateLocationMap;
     private GsonBuilder gsonBuilder;
 
     public static NeverEndlessPvPCrates getInstance() {
         return instance;
+    }
+
+    public void cancelPlayerTask(UUID uuid) {
+        if (taskIdPlayerMap.containsKey(uuid)) {
+            toCancelTaskIdList.add(taskIdPlayerMap.get(uuid));
+            taskIdPlayerMap.remove(uuid);
+        }
+    }
+
+    public void setPlayerTaskId(UUID uuid, int taskId) {
+        if (!taskIdPlayerMap.containsKey(uuid)) {
+            taskIdPlayerMap.put(uuid, taskId);
+        }
     }
 
     @Override
@@ -41,7 +67,15 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
         instance = this;
         configManager = new MeConfigManager(this);
         configManager.load(new MessageConfig());
+        this.taskIdPlayerMap = new HashMap<>();
         this.gsonBuilder = new GsonBuilder();
+        this.hologramMap = new HashMap<>();
+        Bukkit.getScheduler().scheduleAsyncRepeatingTask(this,()->{
+            for (Integer integer : toCancelTaskIdList) {
+                Bukkit.getScheduler().cancelTask(integer);
+            }
+            toCancelTaskIdList.clear();
+        },5L,5L);
         this.gsonBuilder.setDateFormat(MessageConfig.jsonBuilder_jsonDateFormat);
         this.gsonBuilder.setFieldNamingStrategy(f -> {
             switch (f.getName()) {
@@ -51,15 +85,97 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
                     return f.getName();
             }
         });
+        this.registerListeners();
         this.loadRarities();
         this.loadCrateKeys();
+        this.loadCrates();
         this.registerCommands();
+    }
+
+    private void registerListeners() {
+        PluginManager pluginManager = getServer().getPluginManager();
+        pluginManager.registerEvents(new PlayerInteractListener(), this);
+        pluginManager.registerEvents(new MeInventoryClickListener(), this);
+        pluginManager.registerEvents(new MeInventoryCloseListener(), this);
+        pluginManager.registerEvents(new ClickListener(), this);
+    }
+
+    private void saveCrates() {
+        for (UUID uuid : crateMap.keySet()) {
+            if (hologramMap.containsKey(uuid)) {
+                hologramMap.get(uuid).remove();
+                hologramMap.remove(uuid);
+            }
+        }
+        File cratesFile = new File(getDataFolder(), "crates.json");
+        if (cratesFile.exists()) {
+            cratesFile.delete();
+        }
+        try {
+            cratesFile.createNewFile();
+            JsonArray jsonArray = new JsonArray();
+            for (Crate crate : this.crateMap.values()) {
+                jsonArray.add(new JsonParser().parse(this.gsonBuilder.create().toJson(crate)).getAsJsonObject());
+            }
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.add("crates", jsonArray);
+            FileUtils.writeStringToFile(cratesFile, jsonObject.toString(), Charset.defaultCharset());
+            System.out.println("Saved crates");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadCrates() {
+        this.crateMap = new HashMap<>();
+        this.crateLocationMap = new HashMap<>();
+        File cratesFile = new File(getDataFolder(), "crates.json");
+        if (!cratesFile.exists()) {
+            try {
+                cratesFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        try {
+            String fileToString = FileUtils.readFileToString(cratesFile, Charset.defaultCharset());
+            JsonObject parse = new JsonParser().parse(fileToString).getAsJsonObject();
+            if (parse.has("crates")) {
+                for (JsonElement jsonElement : parse.get("crates").getAsJsonArray()) {
+                    JsonObject asJsonObject = jsonElement.getAsJsonObject();
+                    Crate crate = this.gsonBuilder.create().fromJson(asJsonObject.toString(), Crate.class);
+                    this.crateMap.put(crate.getUuid(), crate);
+                    this.crateLocationMap.put(crate.getLocation().toLocation(), crate.getUuid());
+                    System.out.println("Loaded crate " + crate.getUuid().toString());
+                    createHologram(crate);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Could not load crates.");
+            e.printStackTrace();
+        }
+    }
+
+    private void createHologram(Crate crate) {
+        Location location = crate.getLocation().toLocation();
+        ArmorStand armorStand = (ArmorStand) location.getWorld().spawnEntity(location.add(0,0.5,0), EntityType.ARMOR_STAND);
+        armorStand.setVisible(false);
+        armorStand.setGravity(false);
+        armorStand.setBasePlate(false);
+        armorStand.setMetadata("CrateUUID", new FixedMetadataValue(this, crate.getUuid().toString()));
+        armorStand.setSmall(true);
+        armorStand.setCollidable(false);
+        armorStand.setCustomName(ChatColor.translateAlternateColorCodes('&', MessageConfig.hologram_crateLine).replaceAll("%crateName%", crate.getCrateKey()));
+        armorStand.setCustomNameVisible(true);
+        hologramMap.put(crate.getUuid(), armorStand);
     }
 
     private void registerCommands() {
         this.commandHandler = new SpigotCommandHandler();
         this.commandHandler.setDebug(true);
         this.commandHandler.registerCommand(new CrateKeyCommand());
+        this.commandHandler.registerCommand(new CrateCommand());
         this.commandHandler.registerCommands();
     }
 
@@ -72,6 +188,7 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            return;
         }
         try {
             String fileToString = FileUtils.readFileToString(rarityFile, Charset.defaultCharset());
@@ -137,6 +254,7 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
     @Override
     public void onDisable() {
         configManager.unload();
+        this.saveCrates();
     }
 
     public GsonBuilder getGsonBuilder() {
@@ -154,5 +272,53 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
             }
         }
         return null;
+    }
+
+    public boolean isCrate(Block block) {
+        return crateLocationMap.containsKey(block.getLocation());
+    }
+
+    public boolean deleteCrate(Block block) {
+        UUID toDeleteUuid = null;
+        for (UUID uuid : this.crateMap.keySet()) {
+            Crate crate = crateMap.get(uuid);
+            if (block.getLocation().equals(crate.getLocation().toLocation())) {
+                toDeleteUuid = uuid;
+                break;
+            }
+        }
+        if (toDeleteUuid != null) {
+            this.crateMap.remove(toDeleteUuid);
+            if (hologramMap.containsKey(toDeleteUuid)) {
+                hologramMap.get(toDeleteUuid).remove();
+                hologramMap.remove(toDeleteUuid);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public boolean createCrate(Block block, CrateKey crateKey) {
+        Crate crate = new Crate(UUID.randomUUID(), new CrateLocation(block.getLocation()), crateKey.getName());
+        this.crateMap.put(crate.getUuid(), crate);
+        this.crateLocationMap.put(crate.getLocation().toLocation(), crate.getUuid());
+        createHologram(crate);
+        return true;
+    }
+
+    public Crate getCrate(Block block) {
+        if (crateLocationMap.containsKey(block.getLocation())) {
+            UUID uuid = crateLocationMap.get(block.getLocation());
+            return crateMap.get(uuid);
+        }
+        return null;
+    }
+
+    public void reload() {
+        configManager.reload();
+    }
+
+    public List<CrateKey> getCrateKeyList() {
+        return new ArrayList<>(crateKeyMap.values());
     }
 }

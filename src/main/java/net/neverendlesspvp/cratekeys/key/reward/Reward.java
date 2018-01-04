@@ -1,9 +1,14 @@
 package net.neverendlesspvp.cratekeys.key.reward;
 
 import net.neverendlesspvp.cratekeys.NeverEndlessPvPCrates;
-import net.neverendlesspvp.cratekeys.utilities.CrateItem;
+import net.neverendlesspvp.cratekeys.key.CrateItem;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by Matthew E on 1/3/2018.
@@ -16,7 +21,6 @@ public class Reward {
     private String rarity;
     private RewardMessage messages;
 
-
     public Reward(String name, double chance, List<RewardCommand> commands, CrateItem item, String rarity, RewardMessage messages) {
         this.name = name;
         this.chance = chance;
@@ -24,6 +28,10 @@ public class Reward {
         this.item = item;
         this.rarity = rarity;
         this.messages = messages;
+        Rarity rarityObject = getRarityObject();
+        if (rarityObject != null) {
+            this.item.setDisplayName(this.item.getDisplayName().replaceAll("%rarity%", rarityObject.getChatColor() + rarityObject.getName()));
+        }
     }
 
     public Rarity getRarityObject() {
@@ -72,5 +80,23 @@ public class Reward {
 
     public String getRarity() {
         return rarity;
+    }
+
+    public void giveReward(Player player) {
+        if (messages.isBroadcast()) {
+            Bukkit.getServer().broadcastMessage(ChatColor.translateAlternateColorCodes('&', messages.getBroadcastMessage()).replaceAll("%player%", player.getName()));
+        }
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', messages.getWinMessage()));
+        List<String> commandsToRunList = new ArrayList<>();
+        for (RewardCommand rewardCommand :getCommands()) {
+            if (rewardCommand.getChance() >= 100) {
+                commandsToRunList.add(rewardCommand.getCommand());
+            } else if (new Random().nextInt(100) <= rewardCommand.getChance()) {
+                commandsToRunList.add(rewardCommand.getCommand());
+            }
+        }
+        for (String command : commandsToRunList) {
+            Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command.replaceAll("%player%", player.getName()));
+        }
     }
 }

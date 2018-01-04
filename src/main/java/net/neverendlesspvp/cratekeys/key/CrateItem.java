@@ -1,4 +1,4 @@
-package net.neverendlesspvp.cratekeys.utilities;
+package net.neverendlesspvp.cratekeys.key;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -22,6 +22,46 @@ public class CrateItem {
         this.data = data;
         this.displayName = displayName;
         this.lore = lore;
+    }
+
+    /**
+     * Setter for property 'type'.
+     *
+     * @param type Value to set for property 'type'.
+     */
+    public CrateItem setType(Material type) {
+        this.type = type;
+        return this;
+    }
+
+    /**
+     * Setter for property 'data'.
+     *
+     * @param data Value to set for property 'data'.
+     */
+    public CrateItem setData(int data) {
+        this.data = data;
+        return this;
+    }
+
+    /**
+     * Setter for property 'displayName'.
+     *
+     * @param displayName Value to set for property 'displayName'.
+     */
+    public CrateItem setDisplayName(String displayName) {
+        this.displayName = displayName;
+        return this;
+    }
+
+    /**
+     * Setter for property 'lore'.
+     *
+     * @param lore Value to set for property 'lore'.
+     */
+    public CrateItem setLore(String[] lore) {
+        this.lore = lore;
+        return this;
     }
 
     public ItemStack toItemStack(int amount) {

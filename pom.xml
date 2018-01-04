@@ -77,5 +77,12 @@
       <version>2.6</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+        <systemPath>${basedir}/lib/HolographicDisplays.jar</systemPath>
+        <version>1</version>
+        <scope>system</scope>
+      <groupId>hologram</groupId>
+      <artifactId>hologram</artifactId>
+    </dependency>
   </dependencies>
 </project>

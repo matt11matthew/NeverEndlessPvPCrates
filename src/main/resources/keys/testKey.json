@@ -11,6 +11,8 @@
   "rewards": {
     "stoneReward": {
       "chance": 10.0,
+      "rarity": "common",
+      "name": "stoneReward",
       "commands": [
         {
           "chance": 5.0,
@@ -26,6 +28,30 @@
         "type": "STONE",
         "data": 0,
         "displayName": "&aStone",
+        "lore": [
+          "&7Stone reward"
+        ]
+      }
+    },
+    "diamondReward": {
+      "chance": 5.0,
+      "rarity": "common",
+      "name": "diamondReward",
+      "commands": [
+        {
+          "chance": 5.0,
+          "command": "give %player% stone 1"
+        }
+      ],
+      "messages": {
+        "broadcast": false,
+        "winMessage": "You have won the diamond reward from a test key",
+        "broadcastMessage": "%player% has won the diamond reward from a test key"
+      },
+      "item": {
+        "type": "DIAMOND",
+        "data": 0,
+        "displayName": "&aDIAMOND",
         "lore": [
           "&7Stone reward"
         ]

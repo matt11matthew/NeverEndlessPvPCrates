@@ -32,6 +32,15 @@ public class CrateKeyCommand extends SpigotCommand {
                 case "help":
                     sendHelpMessage(sender);
                     break;
+                case "list":
+                    if (!sender.hasPermission(MessageConfig.permissions_crateKeyCommand_list)) {
+                        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', MessageConfig.messages_crateKeyCommand_noPermission).replaceAll("%permission%", MessageConfig.permissions_crateKeyCommand_list));
+                        return;
+                    }
+                    for (CrateKey crateKey : NeverEndlessPvPCrates.getInstance().getCrateKeyList()) {
+                        sender.sendMessage(crateKey.getName());
+                    }
+                    break;
                 default:
                     sendHelpMessage(sender);
                     break;
