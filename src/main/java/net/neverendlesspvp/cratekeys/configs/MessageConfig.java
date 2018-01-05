@@ -44,7 +44,7 @@ public class MessageConfig extends MeConfig {
     public static String sounds_crateTickSound_sound= "NOTE_PLING";
     public static double sounds_crateTickSound_volume= 1.0;
     public static double sounds_crateTickSound_pitch = 1.0;
-    public static String hologram_crateLine="&a%crateName%";
+    public static String hologram_crateLine="%color%%crateName%";
 
     public MessageConfig() {
         super("messages");

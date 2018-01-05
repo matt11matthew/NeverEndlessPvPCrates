@@ -12,14 +12,13 @@ import net.neverendlesspvp.cratekeys.inventory.MeInventoryClickListener;
 import net.neverendlesspvp.cratekeys.inventory.MeInventoryCloseListener;
 import net.neverendlesspvp.cratekeys.key.CrateKey;
 import net.neverendlesspvp.cratekeys.key.reward.Rarity;
-import net.neverendlesspvp.cratekeys.key.reward.Reward;
-import net.neverendlesspvp.cratekeys.key.reward.RewardCommand;
 import net.neverendlesspvp.cratekeys.listeners.ClickListener;
 import net.neverendlesspvp.cratekeys.listeners.PlayerInteractListener;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
@@ -159,15 +158,23 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
 
     private void createHologram(Crate crate) {
         Location location = crate.getLocation().toLocation();
-        ArmorStand armorStand = (ArmorStand) location.getWorld().spawnEntity(location.add(0,0.5,0), EntityType.ARMOR_STAND);
+        location.getBlock().setType(Material.AIR);
+        ArmorStand armorStand = (ArmorStand) location.getWorld().spawnEntity(location, EntityType.ARMOR_STAND);
         armorStand.setVisible(false);
         armorStand.setGravity(false);
         armorStand.setBasePlate(false);
         armorStand.setMetadata("CrateUUID", new FixedMetadataValue(this, crate.getUuid().toString()));
-        armorStand.setSmall(true);
-        armorStand.setCollidable(false);
-        armorStand.setCustomName(ChatColor.translateAlternateColorCodes('&', MessageConfig.hologram_crateLine).replaceAll("%crateName%", crate.getCrateKey()));
+        armorStand.setSmall(false);
+        armorStand.setMarker(false);
+        CrateKey crateKey = getCrateKey(crate.getCrateKey());
+        String color = "&6";
+        if (crateKey != null) {
+            color = crateKey.getColor();
+        }
+        armorStand.setCustomName(ChatColor.translateAlternateColorCodes('&', MessageConfig.hologram_crateLine).replaceAll("%color%", ChatColor.translateAlternateColorCodes('&',color)).replaceAll("%crateName%", crate.getCrateKey().replaceAll("Key", " Crate")));
         armorStand.setCustomNameVisible(true);
+        location.getBlock().setType(Material.CHEST);
+        armorStand.teleport(new Location(location.getWorld(),location.getX(),location.getY(),location.getZ()).subtract(-0.3,0.6,-0.6));
         hologramMap.put(crate.getUuid(), armorStand);
     }
 
@@ -225,29 +232,29 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
         }
         this.crateKeyMap.values().forEach(crateKey -> {
             Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[NeverEndlessPvPCrates] Loaded " + ChatColor.GRAY + crateKey.getName() + ChatColor.GREEN + ".");
-            System.out.println(crateKey.getName() + " Rewards");
-            for (Reward reward : crateKey.getRewardList()) {
-                System.out.println("  " + reward.getName() + ":");
-                System.out.println("    Chance:" + reward.getChance());
-                System.out.println("    Rarity:" + reward.getRarityObject().getName());
-                System.out.println("    Messages:");
-                System.out.println("      Broadcast: " + reward.getMessages().isBroadcast());
-                System.out.println("      BroadcastMessage: " + reward.getMessages().getBroadcastMessage());
-                System.out.println("      WinMessage: " + reward.getMessages().getWinMessage());
-                System.out.println("    Item:");
-                System.out.println("      Type: " + reward.getItem().getType().toString());
-                System.out.println("      DisplayName: " + reward.getItem().getDisplayName());
-                System.out.println("      Data: " + reward.getItem().getData());
-                System.out.println("      Lore:");
-                for (String s : reward.getItem().getLore()) {
-                    System.out.println("        " +  s);
-                }
-                System.out.println("    Commands:");
-                for (RewardCommand rewardCommand : reward.getCommands()) {
-                    System.out.println("      " +rewardCommand.getCommand() + ":" + rewardCommand.getChance() );
-                }
-
-            }
+//            System.out.println(crateKey.getName() + " Rewards");
+//            for (Reward reward : crateKey.getRewardList()) {
+//                System.out.println("  " + reward.getName() + ":");
+//                System.out.println("    Chance:" + reward.getChance());
+//                System.out.println("    Rarity:" + reward.getRarityObject().getName());
+//                System.out.println("    Messages:");
+//                System.out.println("      Broadcast: " + reward.getMessages().isBroadcast());
+//                System.out.println("      BroadcastMessage: " + reward.getMessages().getBroadcastMessage());
+//                System.out.println("      WinMessage: " + reward.getMessages().getWinMessage());
+//                System.out.println("    Item:");
+//                System.out.println("      Type: " + reward.getItem().getType().toString());
+//                System.out.println("      DisplayName: " + reward.getItem().getDisplayName());
+//                System.out.println("      Data: " + reward.getItem().getData());
+//                System.out.println("      Lore:");
+//                for (String s : reward.getItem().getLore()) {
+//                    System.out.println("        " +  s);
+//                }
+//                System.out.println("    Commands:");
+//                for (RewardCommand rewardCommand : reward.getCommands()) {
+//                    System.out.println("      " +rewardCommand.getCommand() + ":" + rewardCommand.getChance() );
+//                }
+//
+//            }
         });
     }
 

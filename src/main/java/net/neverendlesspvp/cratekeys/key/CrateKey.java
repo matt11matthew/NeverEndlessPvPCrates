@@ -20,9 +20,11 @@ public class CrateKey {
     private String name;
     private CrateItem item;
     private Map<String, Reward> rewardMap;
+    private String color;
 
-    public CrateKey(String name, CrateItem item, Map<String, Reward> rewardMap) {
+    public CrateKey(String name, CrateItem item, Map<String, Reward> rewardMap, String color) {
         this.name = name;
+        this.color = color;
         this.item = item;
         this.rewardMap = rewardMap;
     }
@@ -88,6 +90,10 @@ public class CrateKey {
         List<Reward> rewards = RandomUtils.chooseRandomElements(rewardIntegerMap, 1);
         Reward reward = rewards.get(0);
         return reward;
+    }
+
+    public String getColor() {
+        return color;
     }
 
     public class CrateOpenTask extends BukkitRunnable {
