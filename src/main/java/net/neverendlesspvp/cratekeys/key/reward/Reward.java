@@ -28,9 +28,13 @@ public class Reward {
         this.item = item;
         this.rarity = rarity;
         this.messages = messages;
+        updateName();
+    }
+
+    public void updateName() {
         Rarity rarityObject = getRarityObject();
         if (rarityObject != null) {
-            this.item.setDisplayName(this.item.getDisplayName().replaceAll("%rarity%", rarityObject.getChatColor() + rarityObject.getName()));
+            this.item.setDisplayName(ChatColor.translateAlternateColorCodes('&',this.item.getDisplayName().replaceAll(ChatColor.COLOR_CHAR+"", "&a").replaceAll("%rarity%", rarityObject.getChatColor() + rarityObject.getName())));
         }
     }
 

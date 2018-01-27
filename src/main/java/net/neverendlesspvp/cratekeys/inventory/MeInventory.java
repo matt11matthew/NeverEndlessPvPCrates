@@ -165,6 +165,7 @@ public class MeInventory {
             this.meInventoryItemMap.put(integer, meInventoryItem);
         });
     }
+
     public void stackItems() {
         Map<Integer, MeInventoryItem> inventoryItemMap = new HashMap<>();
         Map<Integer, MeInventoryItem> stackedInventoryItemMap = new HashMap<>();
@@ -198,7 +199,6 @@ public class MeInventory {
                 amountMap.put(itemStack, integer1);
             }
         }
-
         for (ItemStack itemStack : amountMap.keySet()) {
             Integer integer = amountMap.get(itemStack);
             MeInventoryItem meInventoryItem = itemStackMeInventoryItemHashMap.get(itemStack);
@@ -206,10 +206,7 @@ public class MeInventory {
             stackedInventoryItemMap.put(slot, meInventoryItem);
             slot++;
         }
-        List<Integer> toRemoveList = new ArrayList<>();
-        for (Integer integer : inventoryItemMap.keySet()) {
-            toRemoveList.add(integer);
-        }
+        List<Integer> toRemoveList = new ArrayList<>(inventoryItemMap.keySet());
         for (Integer integer : toRemoveList) {
             meInventoryItemMap.remove(integer);
         }

@@ -31,11 +31,17 @@ public class PlayerInteractListener implements Listener {
             Block block = event.getClickedBlock();
             if (NeverEndlessPvPCrates.getInstance().isCrate(block)) {
                 event.setCancelled(true);
+                if (player.hasMetadata("LOADING_META")) {
+                    return;
+                }
                 Crate crate = NeverEndlessPvPCrates.getInstance().getCrate(block);
                 if (crate != null) {
                     CrateKey crateKey = NeverEndlessPvPCrates.getInstance().getCrateKey(crate.getCrateKey());
                     if (crateKey != null) {
                         if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+                            if (player.hasMetadata("OPENING_CRATE")) {
+                                return;
+                            }
                             MeInventory meInventory = new MeInventory(ChatColor.translateAlternateColorCodes('&', MessageConfig.crateRewardInventory_title).replaceAll("%crateName%", crate.getCrateKey()), 9 * 3);
                             int slot = 0;
                             for (Reward reward : crateKey.getRewardList()) {
@@ -45,10 +51,12 @@ public class PlayerInteractListener implements Listener {
 
                                         }, ClickType.values()).lock()));
                                 slot++;
-
                             }
                             meInventory.open(player);
                         } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+                            if (player.hasMetadata("OPENING_CRATE")) {
+                                return;
+                            }
                             ItemStack itemInHand = player.getItemInHand();
                             if (itemInHand != null && (itemInHand.getType() != Material.AIR) && crateKey.getItem().toItemStack().isSimilar(itemInHand)) {
                                 if (itemInHand.getAmount() > 1) {

@@ -4,11 +4,11 @@ import net.neverendlesspvp.cratekeys.NeverEndlessPvPCrates;
 import net.neverendlesspvp.cratekeys.configs.MessageConfig;
 import net.neverendlesspvp.cratekeys.key.reward.Reward;
 import net.neverendlesspvp.cratekeys.utilities.RandomUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
@@ -67,8 +67,12 @@ public class CrateKey {
     }
 
     public void openCrate(Player player) {
-        boolean annimation = true;
-        if (!annimation) {
+        if (player.hasMetadata("OPENING_CRATE")) {
+            return;
+        }
+
+        player.setMetadata("OPENING_CRATE", new FixedMetadataValue(NeverEndlessPvPCrates.getInstance(), true));
+        if (!MessageConfig.settings_animation) {
             Map<Reward, Integer> rewardIntegerMap = new HashMap<>();
             for (Reward reward : rewardMap.values()) {
                 rewardIntegerMap.put(reward, (int) reward.getChance());
@@ -76,8 +80,9 @@ public class CrateKey {
             List<Reward> rewards = RandomUtils.chooseRandomElements(rewardIntegerMap, MessageConfig.settings_cycleTimes);
             Reward win = rewards.get(rewards.size() - 1);
             win.giveReward(player);
+            player.removeMetadata("OPENING_CRATE", NeverEndlessPvPCrates.getInstance());
         } else {
-            int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(NeverEndlessPvPCrates.getInstance(), new CrateOpenTask(player, this), MessageConfig.settings_cycleWait, MessageConfig.settings_cycleWait);
+            int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(NeverEndlessPvPCrates.getInstance(), new CrateOpenTask(player, this), MessageConfig.settings_cycleWait/2, MessageConfig.settings_cycleWait/2);
             NeverEndlessPvPCrates.getInstance().setPlayerTaskId(player.getUniqueId(), taskId);
         }
     }
@@ -88,8 +93,7 @@ public class CrateKey {
             rewardIntegerMap.put(reward, (int) reward.getChance());
         }
         List<Reward> rewards = RandomUtils.chooseRandomElements(rewardIntegerMap, 1);
-        Reward reward = rewards.get(0);
-        return reward;
+        return rewards.get(0);
     }
 
     public String getColor() {
@@ -97,7 +101,6 @@ public class CrateKey {
     }
 
     public class CrateOpenTask extends BukkitRunnable {
-
         private Player player;
         private UUID uuid;
         private CrateKey crateKey;
@@ -108,16 +111,25 @@ public class CrateKey {
         private Reward lastReward;
         private boolean rewarded = false;
         private boolean opened = false;
+        private long lastTime;
 
         public CrateOpenTask(Player player, CrateKey crateKey) {
             this.player = player;
             this.uuid = player.getUniqueId();
             this.crateKey = crateKey;
             this.currentCycle = 0;
+            lastTime = System.currentTimeMillis();
             this.inventory = Bukkit.createInventory(null, 9 * 3, ChatColor.translateAlternateColorCodes('&', MessageConfig.crateOpeningInventory_title).replaceAll("%crateName%", crateKey.getName()));
             currentReward = crateKey.getRandomReward();
             lastReward = currentReward;
+          //  1 tick = 50 milliseconds
             inventory.setItem(MessageConfig.crateOpeningInventory_currentRewardSlot, currentReward.getItem().toItemStack());
+            for (int i = 0; i < inventory.getSize(); i++) {
+                if (i == MessageConfig.crateOpeningInventory_currentRewardSlot) {
+                    continue;
+                }
+                inventory.setItem(i, new ItemStack(Material.STAINED_GLASS_PANE, 1, DyeColor.LIGHT_BLUE.getWoolData()));
+            }
             this.maxCycle = MessageConfig.settings_cycleTimes;
         }
 
@@ -127,28 +139,46 @@ public class CrateKey {
                 NeverEndlessPvPCrates.getInstance().cancelPlayerTask(uuid);
                 return;
             }
-            if (!opened) {
+            if (!opened && !rewarded) {
                 player.openInventory(inventory);
                 opened = true;
             }
-            if (player.getOpenInventory()!=null&&(player.getOpenInventory().getTopInventory()!=null)&&(!player.getOpenInventory().getTopInventory().getTitle().equalsIgnoreCase(inventory.getTitle()))) {
+            if (player.getOpenInventory()!=null&& !rewarded&&(player.getOpenInventory().getTopInventory()!=null)&&(!player.getOpenInventory().getTopInventory().getTitle().equalsIgnoreCase(inventory.getTitle()))) {
                 player.openInventory(inventory);
                 opened = true;
             }
             while (lastReward == currentReward) {
                 currentReward = crateKey.getRandomReward();
             }
-            inventory.setItem(MessageConfig.crateOpeningInventory_currentRewardSlot, currentReward.getItem().toItemStack());
-            player.playSound(player.getLocation(), Sound.valueOf(MessageConfig.sounds_crateTickSound_sound.toUpperCase()),(float) MessageConfig.sounds_crateTickSound_volume, (float) MessageConfig.sounds_crateTickSound_pitch);
-            lastReward = currentReward;
-            currentCycle++;
-            if (currentCycle >= maxCycle) {
-                if (!rewarded) {
-                    currentReward.giveReward(player);
-                    rewarded = true;
-                    player.closeInventory();
+            Map<DyeColor, Integer> dyeColorIntegerMap = new HashMap<>();
+            List<DyeColor> dyeColors = Arrays.asList(DyeColor.values());//Arrays.asList(DyeColor.PINK, DyeColor.LIGHT_BLUE, DyeColor.YELLOW, DyeColor.PURPLE, DyeColor.GREEN);
+
+            for (DyeColor dyeColor : dyeColors) {
+                dyeColorIntegerMap.put(dyeColor, (100 / dyeColors.size()));
+            }
+            for (int i = 0; i < inventory.getSize(); i++) {
+                if (i == MessageConfig.crateOpeningInventory_currentRewardSlot) {
+                    continue;
                 }
-                NeverEndlessPvPCrates.getInstance().cancelPlayerTask(player.getUniqueId());
+                inventory.setItem(i, new ItemStack(Material.STAINED_GLASS_PANE, 1, RandomUtils.chooseRandomElements(dyeColorIntegerMap, 1).get(0).getWoolData()));
+            }
+            if ((System.currentTimeMillis()-lastTime)>=50*MessageConfig.settings_cycleWait) {
+                player.playSound(player.getLocation(), Sound.valueOf(MessageConfig.sounds_crateTickSound_sound.toUpperCase()),(float) MessageConfig.sounds_crateTickSound_volume, (float) MessageConfig.sounds_crateTickSound_pitch);
+                inventory.setItem(MessageConfig.crateOpeningInventory_currentRewardSlot, currentReward.getItem().toItemStack());
+                lastTime= System.currentTimeMillis();
+                lastReward = currentReward;
+                currentCycle++;
+                if (currentCycle >= maxCycle) {
+                    if (!rewarded) {
+                        currentReward.giveReward(player);
+                        rewarded = true;
+                        player.closeInventory();
+                        if (player.hasMetadata("OPENING_CRATE")) {
+                            player.removeMetadata("OPENING_CRATE", NeverEndlessPvPCrates.getInstance());
+                        }
+                    }
+                    NeverEndlessPvPCrates.getInstance().cancelPlayerTask(player.getUniqueId());
+                }
             }
         }
     }

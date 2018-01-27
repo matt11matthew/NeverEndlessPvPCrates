@@ -12,6 +12,7 @@ import net.neverendlesspvp.cratekeys.inventory.MeInventoryClickListener;
 import net.neverendlesspvp.cratekeys.inventory.MeInventoryCloseListener;
 import net.neverendlesspvp.cratekeys.key.CrateKey;
 import net.neverendlesspvp.cratekeys.key.reward.Rarity;
+import net.neverendlesspvp.cratekeys.key.reward.Reward;
 import net.neverendlesspvp.cratekeys.listeners.ClickListener;
 import net.neverendlesspvp.cratekeys.listeners.PlayerInteractListener;
 import org.apache.commons.io.FileUtils;
@@ -232,6 +233,9 @@ public final class NeverEndlessPvPCrates extends JavaPlugin {
         }
         this.crateKeyMap.values().forEach(crateKey -> {
             Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[NeverEndlessPvPCrates] Loaded " + ChatColor.GRAY + crateKey.getName() + ChatColor.GREEN + ".");
+            for (Reward reward : crateKey.getRewardList()) {
+                reward.updateName();
+            }
 //            System.out.println(crateKey.getName() + " Rewards");
 //            for (Reward reward : crateKey.getRewardList()) {
 //                System.out.println("  " + reward.getName() + ":");
